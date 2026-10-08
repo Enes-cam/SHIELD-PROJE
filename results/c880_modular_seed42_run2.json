@@ -1,0 +1,32 @@
+{
+  "circuit_name": "c880",
+  "configuration": {
+    "circuit": "datasets/c880.bench",
+    "sample_size": 1000,
+    "seed": 42,
+    "rarity_method": "switching_activity",
+    "threshold": 0.1,
+    "graph_method": "directed_net_graph",
+    "input_analysis_method": "reverse_dfs",
+    "minimum_target_impact": 2,
+    "candidate_generation_method": "random_selected_inputs",
+    "candidate_count": 100,
+    "optimization_method": "greedy",
+    "problem_type": "minimum_test_set",
+    "test_budget": null,
+    "validation_enabled": false
+  },
+  "rare_target_count": 50,
+  "selected_input_count": 23,
+  "candidate_count": 100,
+  "selected_test_count": 4,
+  "coverage": 0.36,
+  "runtime_seconds": 0.18288241600384936,
+  "selected_test_ids": [
+    "T75",
+    "T26",
+    "T42",
+    "T29"
+  ],
+  "validation_result": null
+}

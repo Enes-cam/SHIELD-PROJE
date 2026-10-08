@@ -1,0 +1,16 @@
+{
+  "implementation": "original PSO_DFS.py",
+  "circuit": "datasets/legacy/c880.bench",
+  "seed": 42,
+  "sample_size": 1000,
+  "threshold": 0.1,
+  "rare_gate_count": 48,
+  "selected_input_count": 23,
+  "activated_rare_gate_count": 48,
+  "final_coverage": 1.0,
+  "reported_average_coverage_percent": 5923.48,
+  "reported_average_coverage_is_invalid": true,
+  "runtime_seconds": 13.064328,
+  "notes": "Final 48/48 coverage is valid for this run. The average percentage is a known denominator bug in legacy code. Runtime is machine-dependent."
+}
+

@@ -1,0 +1,62 @@
+{
+  "circuit_name": "c880",
+  "configuration": {
+    "circuit": "datasets/c880.bench",
+    "sample_size": 1000,
+    "seed": 42,
+    "test_vector_method": "shield_legacy_random",
+    "rarity_method": "switching_activity",
+    "threshold": 0.1,
+    "graph_method": "directed_net_graph",
+    "input_analysis_method": "reverse_dfs",
+    "minimum_target_impact": 2,
+    "candidate_generation_method": "random_full_inputs",
+    "candidate_count": 6000,
+    "optimization_method": "pso",
+    "problem_type": "minimum_test_set",
+    "test_budget": null,
+    "validation_enabled": false,
+    "ht_circuit": null,
+    "ht_golden_circuit": null,
+    "ht_ground_truth": null,
+    "optimization_parameters": {
+      "particles": 40,
+      "iterations": 100
+    }
+  },
+  "rare_target_count": 48,
+  "selected_input_count": 23,
+  "candidate_count": 6000,
+  "selected_test_count": 9,
+  "coverage": 1.0,
+  "runtime_seconds": 2.110053082986269,
+  "selected_test_ids": [
+    "T5718",
+    "T1030",
+    "T289",
+    "T2014",
+    "T863",
+    "T5967",
+    "T3436",
+    "T3809",
+    "T4753"
+  ],
+  "optimization_result": {
+    "method": "pso",
+    "problem_type": "minimum_test_set",
+    "objective_value": 9.0,
+    "coverage": 1.0,
+    "selected_test_ids": [
+      "T5718",
+      "T1030",
+      "T289",
+      "T2014",
+      "T863",
+      "T5967",
+      "T3436",
+      "T3809",
+      "T4753"
+    ]
+  },
+  "validation_result": null
+}

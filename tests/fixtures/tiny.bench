@@ -1,0 +1,9 @@
+# Small circuit for deterministic module tests
+INPUT(A)
+INPUT(B)
+INPUT(C)
+OUTPUT(Z)
+N1 = AND(A, B)
+N2 = XOR(B, C)
+Z = OR(N1, N2)
+

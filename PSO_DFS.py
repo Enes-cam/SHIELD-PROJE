@@ -10,14 +10,59 @@ from datetime import datetime
 import DFS_bench
 start = datetime.now()
 
+# =============================================================================
+# TÜRKÇE ÖĞRENME HARİTASI - ÖZGÜN SHIELD KODU
+#
+# Bu dosyada birçok görev tek Parser sınıfında birleşmiştir:
+#   readFile / __loadCode       : BENCH okuma
+#   __cirLevelization           : Gate seviyelerini belirleme
+#   circuitSimulation           : Bir test vektörünü devrede çalıştırma
+#   switchingActivity           : Net geçişlerini sayma
+#   rare_net                    : SWA eşiğinin altındaki netleri seçme
+#   fitness_function            : PSO adayının rare-net geçiş başarısı
+#   PSO                         : Aktif parçacık sürüsü algoritması
+#
+# Dosyanın 261 ve 469 civarında başlayan büyük '# def PSO...' blokları aktif
+# değildir; bunlar yorum satırına alınmış alternatif/deneysel sürümlerdir.
+# Gerçekten çalışan PSO, 'def PSO(self, effective_inputs)' tanımıdır.
+#
+# YENİ MODÜLER SİSTEME EŞLEŞME
+# ----------------------------
+# readFile / __loadCode      -> circuit.py / CircuitReader -> CircuitIR
+# __cirLevelization          -> CircuitIR.topological_gate_order hazırlanırken
+# __inputRand                -> test_vectors.py (legacy uyumlu veya normal RNG)
+# circuitSimulation          -> simulation.py / LogicSimulator
+# switchingActivity          -> activity.py / ActivityAnalyzer
+# rare_net                   -> rarity.py / RareTargetDetector
+# DFS_bench.myfunc           -> graph.py + input_analysis.py
+# aday test üretimi          -> candidate_generation.py
+# rare target coverage      -> coverage.py / CoverageAnalyzer
+# PSO ile seçim             -> Özgün hali BU DOSYADA korunuyor.
+#                              optimization.py içindeki DiscretePSO ayrı ve
+#                              deneysel bir stratejidir; özgün PSO'nun birebir
+#                              taşınmış hali veya baseline sonucu değildir.
+# bütün akışın yönetimi      -> experiment.py / ExperimentRunner
+#
+# Dalgebra.py ilişkisi:
+# circuitSimulation -> __operate eski sistemde Dalgebra fonksiyonlarını çağırır.
+# Yeni sistemde binary gate hesabı simulation._evaluate_gate içindedir. D/D'
+# desteği modüler pipeline'a taşınmamıştır.
+# =============================================================================
+
 
 class Parser:
     def __init__(self, seed):
+        # Bütün legacy çalışma durumu bu nesnede tutulur. seed hem Python random
+        # hem NumPy random için ayarlanarak tekrar üretilebilirlik amaçlanır.
         self.seed = seed
         random.seed(self.seed)
         np.random.seed(self.seed)
         self.varIndex = {}
         self.varMap = {}
+        # varMap özgün kodun merkezi devre veri yapısıdır.
+        # Bir node listesinde önemli indeksler:
+        # [1]=node adı, [2]=INPUT/OUTPUT türü, [3]=anlık değer,
+        # [4]=gate tipi, [5]=giriş netleri, [10]=[0->1, 1->0] sayaçları.
         self.nodeLevel = {}
         self.sortedNode = []
         self.inputList = []
@@ -28,6 +73,9 @@ class Parser:
         self.Coverage_ratio = 1
 
     def readFile(self, fileName):
+        # BENCH dosyasını okur. Dikkat: yalnız parsing yapmaz; __loadCode sonunda
+        # levelization, rastgele giriş, switching activity ve rarity adımlarını
+        # da tetikler. Modülerleştirme ihtiyacının temel nedenlerinden biri bu.
         with open(fileName, "r") as f:
             lines = f.readlines()
             lines = [i for i in lines if i != '\n' and i[0] != '#']
@@ -36,6 +84,7 @@ class Parser:
             return
 
     def __loadCode(self, lines):
+        # INPUT/OUTPUT ve gate satırlarını varMap yapısına dönüştürür.
         counter = 1
         for code in lines:
             if code.strip() == '':
@@ -91,6 +140,8 @@ class Parser:
         self.__inputRand()
         self.switchingActivity()
         self.rare_net()
+        # Yukarıdaki zincir readFile çağrısının neden yalnız "dosya okuma"
+        # olmadığına dikkat edin.
 
         return
 
@@ -108,12 +159,16 @@ class Parser:
         return self.nodeLevel[node]
 
     def __sortByLevel(self):
+        # Simülasyonda bir gate, girdilerini üreten gate'lerden sonra çalışmalı.
+        # Bu nedenle nodelar hesaplanan seviyeye göre sıralanır.
         self.sortedNode = sorted(self.nodeLevel.keys(), key=self.__nodeLv)
         self.inputList = sorted(self.inputList, key=self.__nodeLv)
         return
 
     # circuit Levelization
     def __cirLevelization(self):
+        # Primary inputlar seviye 0'dır. Bir gate'in seviyesi, en yüksek giriş
+        # seviyesinin 1 fazlasıdır. Tüm girişleri seviyelenmeden gate seviyelenmez.
         isUpdate = True
         allAssigned = False
         while (isUpdate and not allAssigned):
@@ -133,7 +188,7 @@ class Parser:
                     if len(self.nodeLevel) == self.size:
                         allAssigned = True
         return
-    
+
     def printSystem(self):
         print()
         print("SystemSpecification: ")
@@ -167,11 +222,16 @@ class Parser:
         return
 
     def __clearValue(self):
+        # Yeni simülasyondan önce tüm node değerlerini bilinmeyen '_' yapar.
         for var in self.varMap:
             self.varMap[var][3] = "_"
         return
 
     def circuitSimulation(self, inputVector):
+        # LOGIC SIMULATION'IN ANA FONKSİYONU.
+        # 1) Eski değerleri temizler.
+        # 2) Primary input değerlerini yükler.
+        # 3) Gate'leri seviye sırasıyla hesaplar.
         self.__clearValue()
         self.__initInput(inputVector)
         for var in self.sortedNode:
@@ -184,6 +244,7 @@ class Parser:
 
 
     def __initInput(self, inputVector):
+        # Test vektöründeki bitleri inputList sırasıyla primary inputlara yazar.
         for i in range(len(self.inputList)):
             node = self.inputList[i]
             value = inputVector[i]
@@ -191,6 +252,8 @@ class Parser:
         return
 
     def __operate(self, nodeOut, gate, inputNodes):
+        # Gate'in giriş değerlerini varMap'ten toplar ve Dalgebra.py içindeki
+        # uygun mantık fonksiyonuna gönderir.
         inputs = []  # list [0, 1, D, D']
         for node in inputNodes:
             canonical = nodeOut + "_" + node
@@ -214,12 +277,19 @@ class Parser:
             return BUFF(inputs)
 
     def __inputRand(self):
+        # LEGACY DAVRANIŞ UYARISI:
+        # Döngüde NoItr adet vektör üretilir fakat circuitSimulation döngünün
+        # dışında olduğu için yalnız son üretilen vektör simüle edilir.
+        # Buna rağmen bu döngü random sayı üretecinin durumunu ilerletir.
         for _ in range(self.NoItr):
             inputVector = [str(randint(0, 1)) for _ in self.inputList]
         self.circuitSimulation(inputVector)
         return
 
     def switchingActivity(self):
+        # ACTIVITY ANALYSIS.
+        # NoItr adet rastgele vektör simüle edilir. Her node için arka arkaya
+        # gelen değerler karşılaştırılarak 0->1 ve 1->0 sayıları tutulur.
         SwResult = {}
         prevState = {}
         changeCount = {}
@@ -248,6 +318,10 @@ class Parser:
         return
 
     def rare_net(self):
+        # RARE TARGET SEÇİMİ.
+        # SWA = (0->1 + 1->0) / NoItr. threshold değerinden küçük gate çıkışları
+        # rare kabul edilir. Primary inputlar gate_out_lst içinde olmadığı için
+        # target listesine alınmaz.
         gate_out_lst = ["AND", "NAND", "OR", "NOR", "XOR", "XNOR", "BUFF", "NOT"]
         rare_list = []
         for node in self.sortedNode:
@@ -258,6 +332,10 @@ class Parser:
 
         return rare_list
 
+    # -------------------------------------------------------------------------
+    # AKTİF DEĞİL: Dinamik parametreli eski/alternatif PSO denemesi.
+    # Aşağıdaki bütün PSO1 bloğu yorum satırıdır ve program tarafından çalışmaz.
+    # -------------------------------------------------------------------------
     # def PSO1(self, effective_inputs): # dynamic
     #     num_particles = 150
     #     inertia_weight_start = 0.9
@@ -293,7 +371,7 @@ class Parser:
     #     # Initialize positions and velocities
     #     for _ in range(num_particles):
     #         position = np.array(['0'] * len(self.inputList))
-            
+
     #         for idx, _ in sorted_effective_inputs:
     #             position[idx] = str(randint(0, 1))
 
@@ -333,7 +411,7 @@ class Parser:
     #             for j in range(len(particle_positions[i])):
     #                 if np.random.rand() < self.sigmoid(particle_velocities[i][j]):
     #                     particle_positions[i][j] = '1' if particle_positions[i][j] == '0' else '0'
-                    
+
     #             # Evaluate particle fitness
     #             fitness = self.fitness_function(particle_positions[i], effective_inputs)
 
@@ -366,19 +444,26 @@ class Parser:
     # def sigmoid(self, x):
     #     return 1 / (1 + np.exp(-x))
 
-    def PSO(self, effective_inputs): 
+    def PSO(self, effective_inputs):
+        # AKTİF PSO BAŞLANGICI.
+        # effective_inputs, DFS_bench.myfunc() tarafından üretilen
+        # {input_index: etkilediği_rare_target_sayısı} sözlüğüdür.
         num_particles = len(self.inputList)
+        # Aktif kod parçacık sayısını primary input sayısına eşitler.
         inertia_weight = 0.7
         cognitive_weight = 1.5
         social_weight = 1.4
         rare_gates = self.rare_net()
+        # PSO'nun hedefleyeceği rare gate listesi mevcut activity sonucundan gelir.
         total_rare_gates = len(rare_gates)
         activated_rare_gates = set()
         test_vectors = []
         total_test_vectors_generated = 0
-        total_coverage = 0  # مجموع کاوریج برای میانگین‌گیری
+        total_coverage = 0  # Ortalama hesabı için toplam coverage değeri.
 
         def get_activated_rare_gates(position):
+            # Bir parçacığı tam giriş vektörü olarak simüle eder. Çıkışı 1 olan
+            # rare gate'leri bu test tarafından aktive edilmiş sayar.
             self.circuitSimulation(position)
             activated = set()
             for rare_gate in rare_gates:
@@ -393,11 +478,14 @@ class Parser:
         particle_best_fitness = []
 
         sorted_effective_inputs = sorted(effective_inputs.items(), key=lambda x: x[1], reverse=True)
+        # Inputlar kaç rare target'ı etkilediklerine göre sıralanır.
 
         # Initialize positions and velocities of particles
         for _ in range(num_particles):
+            # Her parçacık bir binary test vektörüdür. Başlangıç konumları ve
+            # hızlar rastgele oluşturulur; pbest başlangıçta kendi konumudur.
             position = np.array(['0'] * len(self.inputList))
-            
+
             for idx, _ in sorted_effective_inputs:
                 position[idx] = str(randint(0, 1))
 
@@ -413,10 +501,13 @@ class Parser:
             particle_best_fitness.append(fitness)
 
         global_best_position = max(particle_positions, key=lambda pos: self.fitness_function(pos, effective_inputs))
+        # Başlangıç sürüsündeki en yüksek fitness değerli konum gbest olur.
         global_best_fitness = max(particle_best_fitness)
 
         # Generate up to 100 test vectors
         while total_test_vectors_generated < 100:
+            # Dış döngü 100 test üretim girişimi yapar. Coverage %100 olsa bile
+            # aktif sürüm erken durmaz; 100 turun tamamını çalıştırır.
             total_test_vectors_generated += 1
             print(f"\nTest vector generation attempt: {total_test_vectors_generated}")
 
@@ -424,28 +515,35 @@ class Parser:
                 # Update particle velocity
                 cognitive_velocity = cognitive_weight * np.random.rand() * (particle_best_positions[i] != particle_positions[i])
                 social_velocity = social_weight * np.random.rand() * (global_best_position != particle_positions[i])
+                # Cognitive terim parçacığın kendi en iyisine, social terim
+                # sürünün global en iyisine göre farklı bitleri yönlendirir.
                 particle_velocities[i] = (inertia_weight * particle_velocities[i]) + cognitive_velocity + social_velocity
 
                 # Update particle position based on velocity
                 for j in range(len(particle_positions[i])):
                     if np.random.rand() < self.sigmoid(particle_velocities[i][j]):
                         particle_positions[i][j] = '1' if particle_positions[i][j] == '0' else '0'
-                    
+                    # Sigmoid hız değerini bit-flip olasılığına dönüştürür.
+
                 # Evaluate particle fitness
                 fitness = self.fitness_function(particle_positions[i], effective_inputs)
 
                 # Update personal best position
                 if fitness > particle_best_fitness[i]:
+                    # Yeni konum parçacığın geçmişinden iyiyse personal best güncellenir.
                     particle_best_fitness[i] = fitness
                     particle_best_positions[i] = particle_positions[i].copy()
 
                 # Update global best position
                 if fitness > global_best_fitness:
+                    # Bütün sürü açısından daha iyi çözüm bulunduysa gbest güncellenir.
                     global_best_fitness = fitness
                     global_best_position = particle_positions[i].copy()
 
                 activated_by_particle = get_activated_rare_gates(particle_positions[i])
                 new_rare_gates = activated_by_particle - activated_rare_gates
+                # Yalnız daha önce görülmemiş rare gate aktivasyonu sağlayan
+                # parçacıklar nihai test_vectors listesine eklenir.
                 if new_rare_gates:
                     print(f"Test vector {total_test_vectors_generated} (PSO) activated rare gates: {new_rare_gates}")
                     activated_rare_gates.update(new_rare_gates)
@@ -460,19 +558,24 @@ class Parser:
 
         # Calculate and print average coverage
         average_coverage = (total_coverage / total_test_vectors_generated) * 100
+        # BİLİNEN LEGACY HATA: total_coverage her parçacıkta artırılır fakat
+        # yalnız 100 dış tura bölünür. Bu yüzden yazdırılan ortalama %100'ü aşar.
         print(f"\nAverage coverage of 100 test vectors: {average_coverage:.2f}%")
         print(f"Total test vectors generated: {total_test_vectors_generated}")
 
         return test_vectors
 
 
+    # -------------------------------------------------------------------------
+    # AKTİF DEĞİL: Başka bir optimize PSO denemesi. Tüm blok yorum satırıdır.
+    # -------------------------------------------------------------------------
     # def PSO(self, effective_inputs): # opti
-    #     num_particles = 50  # تعداد ذرات کمتر
-    #     max_iterations = 100  # تعداد تکرارهای کمتر
-    #     inertia_weight = 0.7  # وزن ثابت اینرسی
-    #     cognitive_weight = 1.4  # وزن ثابت شناختی
-    #     social_weight = 1.4  # وزن ثابت اجتماعی
-        
+    #     num_particles = 50  # Daha az parçacık kullanır.
+    #     max_iterations = 100  # Daha az iterasyon kullanır.
+    #     inertia_weight = 0.7  # Sabit eylemsizlik ağırlığı.
+    #     cognitive_weight = 1.4  # Sabit bilişsel ağırlık.
+    #     social_weight = 1.4  # Sabit sosyal ağırlık.
+
     #     rare_gates = self.rare_net()
     #     total_rare_gates = len(rare_gates)
     #     activated_rare_gates = set()
@@ -480,40 +583,40 @@ class Parser:
     #     total_test_vectors_generated = 0
 
     #     def get_activated_rare_gates(position):
-    #         """محاسبه گیت‌های نادر فعال‌شده توسط موقعیت فعلی."""
+    #         """Mevcut konumun aktive ettiği rare gate'leri hesaplar."""
     #         self.circuitSimulation(position)
     #         return {
     #             gate[0] for gate in rare_gates if int(self.getValue(gate[0])) == 1
     #         }
 
-    #     # مرتب‌سازی ورودی‌های تأثیرگذار
+    #     # Etkili inputları etki sayılarına göre sıralar.
     #     sorted_effective_inputs = sorted(effective_inputs.items(), key=lambda x: x[1], reverse=True)
     #     effective_input_indices = [idx for idx, _ in sorted_effective_inputs]
 
-    #     # مقداردهی اولیه ذرات
+    #     # Parçacıkların başlangıç değerlerini oluşturur.
     #     particle_positions = np.zeros((num_particles, len(self.inputList)), dtype=str)
     #     particle_velocities = np.random.uniform(-1, 1, (num_particles, len(self.inputList)))
     #     particle_best_positions = np.copy(particle_positions)
     #     particle_best_fitness = np.full(num_particles, -np.inf)
 
     #     for i in range(num_particles):
-    #         # تنظیم موقعیت اولیه بر اساس ورودی‌های تأثیرگذار
+    #         # Başlangıç konumunu etkili inputlara göre ayarlar.
     #         for idx in effective_input_indices:
     #             particle_positions[i, idx] = str(randint(0, 1))
-    #         # مقداردهی تصادفی سایر موقعیت‌ها
+    #         # Diğer konumlara rastgele değer atar.
     #         for idx in range(len(self.inputList)):
     #             if idx not in effective_input_indices:
     #                 particle_positions[i, idx] = str(randint(0, 1))
 
-    #         # محاسبه مقدار اولیه برازش
+    #         # Başlangıç fitness değerini hesaplar.
     #         particle_best_fitness[i] = self.fitness_function(particle_positions[i], effective_inputs)
     #         particle_best_positions[i] = np.copy(particle_positions[i])
 
-    #     # پیدا کردن بهترین ذره جهانی
+    #     # Global en iyi parçacığı bulur.
     #     global_best_position = particle_positions[np.argmax(particle_best_fitness)]
     #     global_best_fitness = max(particle_best_fitness)
 
-    #     # حلقه اصلی PSO
+    #     # PSO'nun ana döngüsü.
     #     iteration = 0
     #     while len(activated_rare_gates) < self.Coverage_ratio * total_rare_gates:
     #         total_test_vectors_generated += 1
@@ -521,31 +624,31 @@ class Parser:
 
     #         print(f"\nIteration {iteration}, Test vectors generated: {total_test_vectors_generated}")
     #         for i in range(num_particles):
-    #             # محاسبه سرعت ذرات
+    #             # Parçacık hızını hesaplar.
     #             r1 = np.random.rand(len(self.inputList))
     #             r2 = np.random.rand(len(self.inputList))
     #             cognitive_velocity = cognitive_weight * r1 * (particle_best_positions[i] != particle_positions[i])
     #             social_velocity = social_weight * r2 * (global_best_position != particle_positions[i])
     #             particle_velocities[i] = inertia_weight * particle_velocities[i] + cognitive_velocity + social_velocity
 
-    #             # به‌روزرسانی موقعیت ذره
+    #             # Parçacık konumunu günceller.
     #             sigmoid_values = 1 / (1 + np.exp(-particle_velocities[i]))
     #             particle_positions[i] = np.where(np.random.rand(len(self.inputList)) < sigmoid_values, '1', '0')
 
-    #             # محاسبه مقدار برازش جدید
+    #             # Yeni fitness değerini hesaplar.
     #             fitness = self.fitness_function(particle_positions[i], effective_inputs)
 
-    #             # به‌روزرسانی بهترین موقعیت شخصی
+    #             # Parçacığın kişisel en iyi konumunu günceller.
     #             if fitness > particle_best_fitness[i]:
     #                 particle_best_fitness[i] = fitness
     #                 particle_best_positions[i] = np.copy(particle_positions[i])
 
-    #             # به‌روزرسانی بهترین موقعیت جهانی
+    #             # Sürünün global en iyi konumunu günceller.
     #             if fitness > global_best_fitness:
     #                 global_best_fitness = fitness
     #                 global_best_position = np.copy(particle_positions[i])
 
-    #             # بررسی گیت‌های نادر فعال‌شده
+    #             # Aktive edilen rare gate'leri kontrol eder.
     #             activated_by_particle = get_activated_rare_gates(particle_positions[i])
     #             new_rare_gates = activated_by_particle - activated_rare_gates
     #             if new_rare_gates:
@@ -554,7 +657,7 @@ class Parser:
     #                 print(f"Particle {i} activated rare gates: {new_rare_gates}")
     #                 print(f"Total rare gates activated: {len(activated_rare_gates)}/{total_rare_gates}")
 
-    #     # نتایج نهایی
+    #     # Nihai sonuçları yazdırır.
     #     print(f"\nGlobal best test vector: {global_best_position}")
     #     print(f"Global best fitness: {global_best_fitness}")
     #     print(f"Minimum number of test vectors needed: {len(test_vectors)}")
@@ -563,17 +666,22 @@ class Parser:
     #     return test_vectors
 
     def sigmoid(self, x):
+        # Hızı 0..1 aralığında bit değiştirme olasılığına dönüştürür.
         return 1 / (1 + np.exp(-x))
 
 
 
     def fitness_function(self, position, effective_inputs):
-        # ایجاد یک بردار ورودی کامل با مقداردهی اولیه 0
+        # FITNESS FONKSİYONU.
+        # Önce yalnız effective input bitleri kullanılan tam bir vektör kurulur;
+        # diğer inputlar 0 bırakılır. Ardından sıfır vektörü -> aday vektör çifti
+        # simüle edilir ve rare netlerde oluşan toplam geçiş sayısı fitness olur.
+        # Tüm bitleri başlangıçta 0 olan eksiksiz bir input vektörü oluşturur.
         inputVector_full = ['0'] * len(self.inputList)
-        # مقداردهی فقط ورودی‌های مؤثر
+        # Yalnızca etkili inputların bit değerlerini yerleştirir.
         for idx in effective_inputs:
             inputVector_full[idx] = position[idx]
-        
+
         SwResult = {}
         prevState = {}
         changeCount = {}
@@ -618,9 +726,12 @@ class Parser:
         child1 = np.concatenate((parent1[:crossover_point], parent2[crossover_point:]))
         child2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
         return child1, child2
-    
+
 
     def SWA_Alpha(self):
+        # Tüm nodeların normalize activity değerlerini çıkarır ve threshold
+        # altında kaç tane olduğunu yazdırır. Ana rarity listesi için rare_net()
+        # kullanılır; bu fonksiyon daha çok raporlama/debug amaçlıdır.
         SW_list = []
         for node in self.sortedNode:
             node_Alpha = ob.varMap[node][10][0] + ob.varMap[node][10][1]
@@ -650,13 +761,24 @@ class Parser:
         return self.varMap[node][3]
 
 
+# =============================================================================
+# ANA PROGRAM AKIŞI
+# Dosya doğrudan çalıştırıldığında aşağıdaki satırlar yürütülür:
+#   1) C880 okunur ve activity/rare netler çıkarılır.
+#   2) Rare netlerden reverse DFS ile effective inputlar bulunur.
+#   3) Aktif PSO test vektörleri üretir.
+#   4) Süre ve activity bilgisi yazdırılır.
+# =============================================================================
 ob = Parser(seed=42)
 test_lst = []
 
-file_name = 'datasets/c880.bench'
+# The original implementation casts rare-net identifiers to int.  Use the
+# equivalent G-prefix-free fixture retained specifically for legacy regression.
+file_name = 'datasets/legacy/c880.bench'
 
 
 ob.readFile(file_name)
+# readFile burada parsing + levelization + activity + rarity çalıştırır.
 ob.printSystem()
 
 filtered_data = {0: 48, 1: 26, 2: 20, 3: 20, 4: 30, 5: 19, 6: 2, 7: 23, 8: 28, 9: 32, 10: 33, 11: 18, 12: 12, 13: 11, 14: 3, 15: 22, 16: 14, 34: 2, 35: 2, 36: 2, 38: 2, 39: 18, 59: 12}
@@ -664,9 +786,11 @@ filtered_data = {0: 48, 1: 26, 2: 20, 3: 20, 4: 30, 5: 19, 6: 2, 7: 23, 8: 28, 9
 idx_lst = [int(item[0]) for item in ob.rare_net()]
 
 filtered_data = DFS_bench.myfunc(idx_lst, file_name)
+# Reverse DFS sonucu: input index -> etkilediği rare target sayısı.
 print(filtered_data)
 print("idx_lst: ", idx_lst)
 ob.PSO(filtered_data)
+# Aktif PSO, reverse DFS sonucunu kullanarak test vektörleri arar.
 print("time: ", (datetime.now() - start).total_seconds())
 ob.SWA_Alpha()
 

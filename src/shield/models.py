@@ -122,6 +122,22 @@ class SelectedInputs:
 
 
 @dataclass(frozen=True)
+class InputSelectionMetrics:
+    """Task 4 result for one circuit/ranking method/top-k setting."""
+
+    circuit: str
+    method: str
+    k: int
+    num_P: int
+    num_PR: int
+    num_selected: int
+    num_R: int
+    DR_k: float
+    TP_k: float
+    runtime_s: float
+
+
+@dataclass(frozen=True)
 class Candidate:
     candidate_id: str
     test_vector: TestVector
@@ -222,6 +238,7 @@ class ExperimentResults:
     selected_test_ids: tuple[str, ...]
     optimization_result: Mapping[str, Any]
     validation_result: ValidationResults | None = None
+    input_selection_results: tuple[InputSelectionMetrics, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

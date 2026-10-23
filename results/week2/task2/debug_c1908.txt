@@ -1,0 +1,15 @@
+target=2537
+step 1: visited=2537 stack=['1171', '2104', '2361', '2315', '2286']
+step 2: visited=2286 stack=['1171', '2104', '2361', '2315', '2266']
+step 3: visited=2266 stack=['1171', '2104', '2361', '2315', '2241', '1164']
+step 4: visited=1164 stack=['1171', '2104', '2361', '2315', '2241', '899']
+step 5: visited=899 stack=['1171', '2104', '2361', '2315', '2241', '612', '53']
+step 6: visited=53 stack=['1171', '2104', '2361', '2315', '2241', '612']
+step 7: visited=612 stack=['1171', '2104', '2361', '2315', '2241', '300', '256']
+step 8: visited=256 stack=['1171', '2104', '2361', '2315', '2241', '300', '72']
+step 9: visited=72 stack=['1171', '2104', '2361', '2315', '2241', '300']
+step 10: visited=300 stack=['1171', '2104', '2361', '2315', '2241', '94']
+fanin_cone_size=480
+reachable_input_count=32
+SHIELD reverse DFS == reachable_inputs for every target: True
+Yorum: eşleşme yoksa traversal yönü, node kimliği veya minimum_target_impact filtresi kontrol edilmelidir.

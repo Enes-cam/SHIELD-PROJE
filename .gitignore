@@ -15,3 +15,6 @@ output/
 *.egg-info/
 build/
 dist/
+
+# Week 2 simulation cache is reproducible and large; keep it locally, not in Git.
+results/week2/task1/activity_cache/

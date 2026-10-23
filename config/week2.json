@@ -1,0 +1,28 @@
+{
+  "circuits": ["c1908", "c2670", "c3540", "c5315", "c6288", "c7552"],
+  "dataset_dir": "datasets",
+  "output_dir": "results/week2",
+  "baseline": {
+    "M": 1000,
+    "seed": 42,
+    "threshold": 0.1,
+    "rarity_method": "switching_activity",
+    "test_vector_method": "shield_legacy_random"
+  },
+  "task1": {
+    "sample_sizes": [250, 500, 1000, 2000, 5000, 10000],
+    "seeds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "threshold_start": 0.01,
+    "threshold_stop": 0.30,
+    "threshold_step": 0.01,
+    "rarity_methods": ["switching_activity"],
+    "plot_thresholds": [0.05, 0.10, 0.20]
+  },
+  "task3": {
+    "input_ranking_methods": ["shield_dfs", "reach_count", "dist_weighted"],
+    "k_values": [10, 20, 30, 40, 50, 75, 100]
+  },
+  "task4": {
+    "runtime_repetitions": 5
+  }
+}

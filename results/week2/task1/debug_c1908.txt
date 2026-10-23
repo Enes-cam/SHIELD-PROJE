@@ -1,0 +1,25 @@
+TASK 1 DEBUG — c1908 baseline
+
+net=2537
+first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+manual first20 zero=0 one=20 transitions=0
+ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+
+net=2543
+first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+manual first20 zero=0 one=20 transitions=0
+ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+
+net=2549
+first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+manual first20 zero=0 one=20 transitions=0
+ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+
+lowest pair: seed 1 vs seed 3, J=0.9719626168224299
+only seed 1: []
+only seed 3: ['1122', '1160', '1231']
+Farklı netlerin skorları (eşik uzaklığı ile):
+net=1122 seed1=0.116000 seed3=0.098000 threshold_distance=(0.016000, 0.002000)
+net=1160 seed1=0.118000 seed3=0.094000 threshold_distance=(0.018000, 0.006000)
+net=1231 seed1=0.118000 seed3=0.094000 threshold_distance=(0.018000, 0.006000)
+Yorum: eşik uzaklığı küçük olan netlerde küçük örnekleme farkı rare/non-rare kararını değiştirebilir.

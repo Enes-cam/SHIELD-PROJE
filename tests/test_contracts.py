@@ -61,7 +61,9 @@ class ModuleContractTests(unittest.TestCase):
                 if isinstance(node, ast.ImportFrom) and node.level > 0 and node.module
             }
             with self.subTest(module=filename):
-                self.assertLessEqual(internal_imports, allowed_shared_modules)
+                # Week 2 Task 3 uses the public Graph Module operations from Task 2.
+                allowed = allowed_shared_modules | ({"graph"} if filename == "input_analysis.py" else set())
+                self.assertLessEqual(internal_imports, allowed)
 
 
 if __name__ == "__main__":

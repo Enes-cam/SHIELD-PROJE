@@ -121,6 +121,7 @@ class SelectedInputs:
         return tuple(item.input_id for item in self.inputs)
 
 
+# Week 2 Task 4: DR, TP ve runtime ortak deney sonucu içinde saklanır.
 @dataclass(frozen=True)
 class InputSelectionMetrics:
     """Task 4 result for one circuit/ranking method/top-k setting."""

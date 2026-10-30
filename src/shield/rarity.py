@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+import math
+
 from .models import ActivityInfo, RareTarget, RareTargets
+
+
+# Week 2 Task 1: Farklı çalıştırmalardaki rare-target kümeleri Jaccard ile karşılaştırılır.
+def jaccard(a: set[str], b: set[str]) -> float:
+    """Return set similarity; two empty sets are undefined for this experiment."""
+    union = a | b
+    return math.nan if not union else len(a & b) / len(union)
 
 
 class RareTargetSelector:

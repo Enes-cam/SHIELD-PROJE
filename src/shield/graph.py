@@ -1,9 +1,4 @@
-"""Graph Module, independent from NetworkX.
-
-Besides constructing the common :class:`CircuitGraph`, this module owns the
-four graph queries requested in week 2.  None of the functions know anything
-about rarity or test generation.
-"""
+"""Graph Module, independent from NetworkX."""
 
 from __future__ import annotations
 
@@ -31,6 +26,7 @@ class CircuitGraphBuilder:
         )
 
 
+# Week 2 Task 2: Yalnızca CircuitGraph kullanan graph sorguları bu modülde tutulur.
 def fanin_cone(graph: CircuitGraph, node: str) -> set[str]:
     """Return all nodes that can reach *node*, excluding *node* itself."""
     if node not in graph.nodes:
@@ -91,12 +87,12 @@ def distance(graph: CircuitGraph, src: str, dst: str) -> int | None:
 def reverse_traversal_trace(
     graph: CircuitGraph, node: str, limit: int = 10
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """Deterministic debug trace: visited node and DFS stack after expansion."""
+    """Trace the first steps of the same backward traversal as fanin_cone."""
     if node not in graph.nodes:
         raise KeyError(f"unknown graph node: {node}")
     trace: list[tuple[str, tuple[str, ...]]] = []
     visited: set[str] = set()
-    stack = [node]
+    stack = list(reversed(graph.predecessors.get(node, ())))
     while stack and len(trace) < limit:
         current = stack.pop()
         if current in visited:

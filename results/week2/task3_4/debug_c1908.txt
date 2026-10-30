@@ -35,3 +35,5 @@ input=79 score=0.586525 reached=104 nearest=1
 input=82 score=0.586525 reached=104 nearest=1
 
 Sırası değişen örnek input=1: shield_dfs_rank=1, dist_weighted_rank=19. Neden: shield_dfs hedef sayısını, dist_weighted ise hedeflere olan yol uzunluklarını da hesaba katar.
+c1908 baseline: P_R dışı input yok; 33 primary input'un tamamı en az bir rare target'a ulaşıyor.
+P_R dışı örnek circuit=c2670 input=2; fanout_cone ile erişilen rare target'lar=[]

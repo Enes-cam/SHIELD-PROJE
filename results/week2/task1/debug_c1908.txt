@@ -2,18 +2,18 @@ TASK 1 DEBUG — c1908 baseline
 
 net=2537
 first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-manual first20 zero=0 one=20 transitions=0
-ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+manual first20 zero=0 one=20 01=0 10=0
+ActivityInfo first20 zero=0 one=20 01=0 10=0
 
 net=2543
 first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-manual first20 zero=0 one=20 transitions=0
-ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+manual first20 zero=0 one=20 01=0 10=0
+ActivityInfo first20 zero=0 one=20 01=0 10=0
 
 net=2549
 first20=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-manual first20 zero=0 one=20 transitions=0
-ActivityInfo fullM zero=0 one=1000 01=0 10=0 score=0.0
+manual first20 zero=0 one=20 01=0 10=0
+ActivityInfo first20 zero=0 one=20 01=0 10=0
 
 lowest pair: seed 1 vs seed 3, J=0.9719626168224299
 only seed 1: []

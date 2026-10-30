@@ -21,3 +21,4 @@ target=6703 reachable_inputs=['324', '331', '332', '338', '341', '348', '351', '
 target=6158 reachable_inputs=['54', '332', '338', '341', '348', '351', '358', '361', '366', '514', '523', '534']
 target=6140 reachable_inputs=['293', '299', '302', '307', '308', '315', '316', '323', '332', '479', '490']
 target=6168 reachable_inputs=['293', '299', '302', '307', '308', '315', '316', '323', '332', '479', '490']
+Yorum: Bu hedeflere ulaşan input'ların hiçbiri seçilen top-k kümesinde değil.

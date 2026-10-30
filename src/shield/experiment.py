@@ -3,20 +3,80 @@
 from __future__ import annotations
 
 from pathlib import Path
+from statistics import mean
 from time import perf_counter
 
 from .activity import ActivityAnalyzer
 from .candidate_generation import RandomFullInputCandidateGenerator, RandomSelectedInputCandidateGenerator
 from .circuit import BenchCircuitReader
 from .coverage import CoverageAnalyzer
-from .graph import CircuitGraphBuilder
-from .input_analysis import ReverseDFSInputAnalyzer
-from .models import ExperimentConfiguration, ExperimentResults, HTCircuit, ProblemDefinition
+from .graph import CircuitGraphBuilder, distance
+from .input_analysis import InputRanker, ReverseDFSInputAnalyzer, select_top_k
+from .models import (
+    CircuitGraph,
+    ExperimentConfiguration,
+    ExperimentResults,
+    HTCircuit,
+    InputSelectionMetrics,
+    ProblemDefinition,
+    RareTargets,
+)
 from .optimization import DiscretePSOOptimizer, GreedyCoverageOptimizer
 from .rarity import RareTargetSelector
 from .simulation import LogicSimulator
 from .test_vectors import LegacyShieldTestVectorGenerator, RandomTestVectorGenerator
 from .validation import HTValidator
+
+
+# Week 2 Task 4: Ranking süresi, yöntemin içine raporlama kodu eklemeden ölçülür.
+def measure_input_ranking(
+    graph: CircuitGraph,
+    rare_targets: RareTargets,
+    candidate_inputs: set[str],
+    method: str,
+    repetitions: int = 5,
+) -> tuple[dict[str, float], float]:
+    if repetitions < 1:
+        raise ValueError("repetitions must be at least 1")
+    ranker = InputRanker(method)
+    timings: list[float] = []
+    scores: dict[str, float] = {}
+    for _ in range(repetitions):
+        started = perf_counter()
+        scores = ranker.rank(graph, rare_targets, candidate_inputs)
+        timings.append(perf_counter() - started)
+    return scores, mean(timings)
+
+
+# Week 2 Task 4: Bir top-k seçimi için DR ve TP değerleri hesaplanır.
+def evaluate_input_selection(
+    circuit_name: str,
+    graph: CircuitGraph,
+    rare_targets: RareTargets,
+    method: str,
+    k: int,
+    scores: dict[str, float],
+    runtime_s: float,
+) -> tuple[InputSelectionMetrics, tuple[str, ...]]:
+    selected = select_top_k(scores, k)
+    covered = {
+        target.target_id
+        for target in rare_targets.targets
+        if any(distance(graph, node, target.target_id) is not None for node in selected)
+    }
+    metrics = InputSelectionMetrics(
+        circuit=circuit_name,
+        method=method,
+        k=k,
+        num_P=len(graph.primary_input_nodes),
+        num_PR=len(scores),
+        num_selected=len(selected),
+        num_R=len(rare_targets.targets),
+        DR_k=1 - len(selected) / len(graph.primary_input_nodes),
+        TP_k=len(covered) / len(rare_targets.targets) if rare_targets.targets else 1.0,
+        runtime_s=runtime_s,
+    )
+    return metrics, selected
 
 
 class ExperimentRunner:
